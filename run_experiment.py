@@ -13,8 +13,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--provider",
         required=True,
-        choices=["mock"],
+        choices=["mock", "ollama"],
         help="LLM provider to use.",
+    )
+    parser.add_argument(
+        "--model-name",
+        help="Model name for Ollama. Required when --provider ollama is used.",
+    )
+    parser.add_argument(
+        "--ollama-base-url",
+        default="http://localhost:11434",
+        help="Base URL for the Ollama server.",
+    )
+    parser.add_argument(
+        "--timeout-seconds",
+        type=int,
+        default=120,
+        help="Request timeout in seconds for Ollama calls.",
     )
     return parser.parse_args()
 
@@ -26,7 +41,12 @@ def main() -> None:
     results_dir = Path("results")
 
     loaded_input_data = load_input_data(input_data_dir)
-    llm_client = build_llm_client(provider=args.provider)
+    llm_client = build_llm_client(
+        provider=args.provider,
+        model_name=args.model_name,
+        ollama_base_url=args.ollama_base_url,
+        timeout_seconds=args.timeout_seconds,
+    )
 
     run_dir = run_experiment(
         loaded_input_data=loaded_input_data,
