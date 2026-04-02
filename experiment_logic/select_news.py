@@ -12,6 +12,7 @@ def select_visible_news(
         return []
 
     if news_mode == "all_until_day":
-        return [item for item in news_items if item.date <= current_date]
+        visible_news = [item for item in news_items if item.date <= current_date]
+        return sorted(visible_news, key=lambda item: (item.date, item.news_id))
 
     raise ValueError(f"Unsupported news_mode: {news_mode!r}.")

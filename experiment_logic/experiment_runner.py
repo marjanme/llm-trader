@@ -26,9 +26,29 @@ def run_experiment(
     llm_client: LLMClient,
     results_dir: Path,
 ) -> Path:
-    market = _get_market(loaded_input_data, market_id)
-    configuration = _get_configuration(loaded_input_data, configuration_id)
-    instruction = _get_instruction(loaded_input_data, configuration.instruction_id)
+    markets_by_id = {market.market_id: market for market in loaded_input_data.markets}
+    configurations_by_id = {
+        configuration.configuration_id: configuration for configuration in loaded_input_data.configurations
+    }
+    instructions_by_id = {
+        instruction.instruction_id: instruction for instruction in loaded_input_data.instructions
+    }
+
+    try:
+        market = markets_by_id[market_id]
+    except KeyError as exc:
+        raise ValueError(f"Unknown market_id: {market_id!r}.") from exc
+
+    try:
+        configuration = configurations_by_id[configuration_id]
+    except KeyError as exc:
+        raise ValueError(f"Unknown configuration_id: {configuration_id!r}.") from exc
+
+    try:
+        instruction = instructions_by_id[configuration.instruction_id]
+    except KeyError as exc:
+        raise ValueError(f"Unknown instruction_id: {configuration.instruction_id!r}.") from exc
+
     market_daily_data = _get_sorted_daily_data_for_market(loaded_input_data, market.market_id)
     market_news = _get_news_for_market(loaded_input_data, market.market_id)
 
@@ -73,41 +93,27 @@ def _build_prediction_for_day(
     )
 
     user_message = ConversationMessage(role="user", content=rendered_prompt)
-    raw_response = llm_client.generate_response([user_message])
+    initial_conversation = [user_message]
+
+    raw_response = llm_client.generate_response(initial_conversation)
     parsed_response = parse_llm_response(raw_response)
+
     assistant_message = ConversationMessage(role="assistant", content=raw_response)
+    complete_conversation = [user_message, assistant_message]
+
+    p_yes = round(parsed_response.probability_yes, 6)
+    p_no = round(1.0 - parsed_response.probability_yes, 6)
 
     return Prediction(
         market_id=market.market_id,
         configuration_id=configuration.configuration_id,
         date=daily_data_row.date,
         reasoning=parsed_response.reasoning,
-        p_yes=round(parsed_response.probability_yes, 6),
-        p_no=round(1.0 - parsed_response.probability_yes, 6),
+        p_yes=p_yes,
+        p_no=p_no,
         rendered_prompt=rendered_prompt,
-        complete_conversation=[user_message, assistant_message],
+        complete_conversation=complete_conversation,
     )
-
-
-def _get_market(loaded_input_data: LoadedInputData, market_id: str) -> Market:
-    for market in loaded_input_data.markets:
-        if market.market_id == market_id:
-            return market
-    raise ValueError(f"Unknown market_id: {market_id!r}.")
-
-
-def _get_configuration(loaded_input_data: LoadedInputData, configuration_id: str) -> Configuration:
-    for configuration in loaded_input_data.configurations:
-        if configuration.configuration_id == configuration_id:
-            return configuration
-    raise ValueError(f"Unknown configuration_id: {configuration_id!r}.")
-
-
-def _get_instruction(loaded_input_data: LoadedInputData, instruction_id: str) -> Instruction:
-    for instruction in loaded_input_data.instructions:
-        if instruction.instruction_id == instruction_id:
-            return instruction
-    raise ValueError(f"Unknown instruction_id: {instruction_id!r}.")
 
 
 def _get_sorted_daily_data_for_market(
@@ -115,6 +121,9 @@ def _get_sorted_daily_data_for_market(
     market_id: str,
 ) -> list[DailyDataRow]:
     market_daily_data = [row for row in loaded_input_data.daily_data if row.market_id == market_id]
+    if not market_daily_data:
+        raise ValueError(f"No daily_data rows found for market_id: {market_id!r}.")
+
     return sorted(market_daily_data, key=lambda row: row.date)
 
 
