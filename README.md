@@ -92,6 +92,12 @@ Primer zagona:
 python3 run_experiment.py --market-id 1 --configuration-id 1 --provider mock
 ```
 
+Primer zagona z Ollama-kompatibilnim endpointom na HiveCore in privzetim modelom `qwen3.5:4b`:
+
+```bash
+python3 run_experiment.py --market-id 1 --configuration-id 1 --provider ollama
+```
+
 Pri tem zagonu program:
 
 1. prebere trg z ID `1`,

@@ -77,8 +77,8 @@ class OllamaLLMClient:
 
 def build_llm_client(
     provider: str,
-    model_name: str | None = None,
-    ollama_base_url: str = "http://localhost:11434",
+    model_name: str | None = "qwen3.5:4b",
+    ollama_base_url: str = "http://hivecore.famnit.upr.si:6666",
     timeout_seconds: int = 120,
 ) -> LLMClient:
     if provider == "mock":

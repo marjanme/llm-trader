@@ -18,11 +18,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--model-name",
-        help="Model name for Ollama. Required when --provider ollama is used.",
+        default="qwen3.5:4b",
+        help="Model name for Ollama.",
     )
     parser.add_argument(
         "--ollama-base-url",
-        default="http://localhost:11434",
+        default="http://hivecore.famnit.upr.si:6666",
         help="Base URL for the Ollama server.",
     )
     parser.add_argument(
